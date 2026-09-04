@@ -6,7 +6,9 @@ import com.example.study.study.dto.StudyListResponse;
 import com.example.study.study.dto.StudyRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,21 +38,19 @@ public class StudyController {
 
     private final StudyService studyService;
 
-    /*
-     * TODO 12 · 모집글 목록 주소
-     *
-     * 기능        GET /api/studies 를 받음
-     *             page · size · keyword · status 를 질의 값으로 받으며
-     *             기본값은 page 0 · size 10 · 정렬은 식별자 내림차순
-     *             status 는 문자로 오므로 StudyStatus 로 바꿔 넘김
-     * 활용메소드  StudyService.findAll()   TODO 11 · 같은 담당
-     *             PageResponse.of()        공통 · 제공됨
-     *             PageRequest.of()         쪽 요청을 만듦
-     *             Sort.by()                정렬을 지정
-     * 반환형태    PageResponse<StudyListResponse> · TODO.md 응답 형태 참고
-     * 동작결과    EP-01 · GET /api/studies?page=0&size=10 이 쪽 형태로 응답
-     */
+    @GetMapping
+    public PageResponse<StudyListResponse> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status) {
 
+        StudyStatus studyStatus = (status != null) ? StudyStatus.valueOf(status) : null;
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<StudyListResponse> result = studyService.findAll(keyword, studyStatus, pageable);
+        return PageResponse.of(result, item -> item);
+    }
     /*
      * TODO 26 · 모집글 주소 다섯
      *

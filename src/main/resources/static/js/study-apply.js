@@ -52,17 +52,39 @@ StudyPage.register(async function renderApply() {
 
     /*
      * TODO 35 · 신청 후 화면
-     *
-     * 기능        내 신청이 있으면 상태와 신청일을 보임
-     *             대기 상태일 때만 취소 단추를 둠
-     *             취소에 성공하면 다시 그려 신청 전 화면으로 돌아감
-     * 활용메소드  StudyPage.myApplication   제공됨 · 없으면 null
-     *             badge() · shortDate()     common.js · 제공됨
-     *             api.del()                 api.js · 제공됨
-     *             DELETE /api/applications/{id}   TODO 33 · 같은 담당
-     * 받는자료    ApplicationResponse · status 는 PENDING · ACCEPTED · REJECTED
-     * 그릴위치    SC-02 · #apply-panel
-     *             조각은 parts.html 의 "신청 후 · 대기" 와 "신청 후 · 수락됨"
-     * 동작결과    대기 건은 취소 단추가 보이고 수락된 건은 보이지 않음
      */
+
+    const cancelBtnHtml = myApplication.status === 'PENDING'
+        ? `<button type="button" id="btn-cancel-apply" class="btn-cancel">신청 취소</button>`
+        : '';
+
+    applyPanel.innerHTML = `
+        <div class="apply-info-box">
+            <div class="apply-header">
+                <span class="status-badge">${badge(myApplication.status)}</span>
+                <span class="apply-date">신청일: ${shortDate(myApplication.createdAt)}</span>
+            </div>
+            <div class="apply-body">
+                <p class="apply-message">${myApplication.message || '작성한 메시지가 없습니다.'}</p>
+            </div>
+            <div class="apply-actions">
+                ${cancelBtnHtml}
+            </div>
+        </div>
+    `;
+
+    const cancelBtn = applyPanel.querySelector('#btn-cancel-apply');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', async () => {
+            if (!confirm('신청을 취소하시겠습니까?')) return;
+
+            try {
+                await api.del(`/api/applications/${myApplication.id}`);
+
+                await StudyPage.reload();
+            } catch (error) {
+                showError(error);
+            }
+        });
+    }
 });

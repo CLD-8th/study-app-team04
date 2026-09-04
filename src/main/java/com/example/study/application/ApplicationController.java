@@ -30,15 +30,28 @@ public class ApplicationController {
 
     /*
      * TODO 33 · 신청과 취소 주소
-     *
-     * 기능        POST /api/studies/{studyId}/applications 와
-     *             DELETE /api/applications/{id} 를 만듦
-     *             신청은 201 · 취소는 204
-     * 활용메소드  ApplicationService.apply()    TODO 31 · 같은 담당
-     *             ApplicationService.cancel()   TODO 32 · 같은 담당
-     * 반환형태    ApplicationResponse · 취소는 없음
-     * 동작결과    EP-07 · EP-08
      */
+
+    @PostMapping("/api/studies/{studyId}/applications")
+    public ResponseEntity<ApplicationResponse> apply(
+            @PathVariable Long studyId,
+            @Valid @RequestBody ApplicationRequest request,
+            @AuthenticationPrincipal Long memberId) {
+
+        // request.getMessage() -> request.message() 로 수정
+        ApplicationResponse response = applicationService.apply(studyId, request.message(), memberId);
+        return ResponseEntity.status(201).body(response);
+    }
+
+    @DeleteMapping("/api/applications/{id}")
+    public ResponseEntity<Void> cancel(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long memberId) {
+
+        applicationService.cancel(id, memberId);
+        return ResponseEntity.noContent().build();
+    }
+
 
     /*
      * TODO 46 · 신청 처리 주소 셋

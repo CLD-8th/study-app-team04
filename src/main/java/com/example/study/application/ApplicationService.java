@@ -135,8 +135,7 @@ public class ApplicationService {
      * 마지막 자리를 채우면 모집글도 함께 마감함.
      * 별도 처리를 두지 않고 수락 시점에 판단함.
      */
-    @Transactional
-    public ApplicationResponse accept(Long applicationId, Long memberId) {
+
     /*
      * TODO 43 · 신청 수락
      *
@@ -151,7 +150,32 @@ public class ApplicationService {
      * 동작결과    EP-10 · 상태가 ACCEPTED · 정원이 차면 400 CAPACITY_EXCEEDED
      *             마지막 자리를 채우면 모집글 상태가 CLOSED
      */
-        throw new UnsupportedOperationException("TODO 43");
+    @Transactional
+    public ApplicationResponse accept(Long applicationId, Long memberId) {
+
+        Application application = processable(applicationId, memberId);
+        StudyPost studyPost = application.getStudyPost();
+
+        long acceptedCount =
+                applicationRepository.countByStudyPostIdAndStatus(
+                        studyPost.getId(),
+                        ApplicationStatus.ACCEPTED
+                );
+
+        if (acceptedCount >= studyPost.getCapacity()) {
+            throw new BusinessException(
+                    ErrorCode.CAPACITY_EXCEEDED,
+                    "스터디 정원이 모두 찼습니다."
+            );
+        }
+
+        application.accept();
+
+        if (acceptedCount + 1 == studyPost.getCapacity()) {
+            studyPost.close();
+        }
+
+        return ApplicationResponse.from(application);
     }
 
     /**

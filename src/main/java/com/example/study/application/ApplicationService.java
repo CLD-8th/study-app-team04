@@ -183,8 +183,6 @@ public class ApplicationService {
      *
      * 정원을 확인하지 않음. 거절은 인원에 영향을 주지 않음.
      */
-    @Transactional
-    public ApplicationResponse reject(Long applicationId, Long memberId) {
     /*
      * TODO 44 · 신청 거절
      *
@@ -195,10 +193,15 @@ public class ApplicationService {
      * 반환형태    ApplicationResponse
      * 동작결과    EP-11 · 상태가 REJECTED · 처리된 건은 400 ALREADY_PROCESSED
      */
-        throw new UnsupportedOperationException("TODO 44");
+
+    @Transactional
+    public ApplicationResponse reject(Long applicationId, Long memberId) {
+
+        Application application = processable(applicationId, memberId);
+        application.reject();
+        return ApplicationResponse.from(application);
     }
 
-    private Application processable(Long applicationId, Long memberId) {
     /*
      * TODO 45 · 처리 가능 확인 공통
      *
@@ -210,7 +213,21 @@ public class ApplicationService {
      * 반환형태    Application
      * 동작결과    남의 글 403 · 처리된 건 400 ALREADY_PROCESSED
      */
-        throw new UnsupportedOperationException("TODO 45");
+
+    private Application processable(Long applicationId, Long memberId) {
+        Application application = getWithStudyPost(applicationId);
+        StudyPost studyPost = application.getStudyPost();
+
+        if (!studyPost.isWrittenBy(memberId)){
+            throw new BusinessException((ErrorCode.FORBIDDEN));
+        }
+
+        if (!application.isPending()){
+            throw new BusinessException((ErrorCode.ALREADY_PROCESSED));
+        }
+
+        return application;
+
     }
 
     private Application getWithStudyPost(Long id) {

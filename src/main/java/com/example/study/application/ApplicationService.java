@@ -38,26 +38,36 @@ public class ApplicationService {
      */
     @Transactional
     public ApplicationResponse apply(Long studyPostId, String message, Long memberId) {
-    /*
-     * TODO 31 · 신청
-     *
-     * 기능        대상 확인 → 자기 모집글 → 상태 → 마감일 → 중복 순서로 판단
-     *             순서가 바뀌면 없는 모집글에 다른 판단을 시도하게 됨
-     *             상태가 마감인 것과 마감일이 지난 것은 사유가 다름
-     *             거절된 신청도 중복으로 봄 · 재신청을 허용하지 않기로 정함
-     * 활용메소드  StudyService.getWithWriter()      제공됨
-     *             StudyPost.isWrittenBy()          엔티티 · 제공됨
-     *             StudyPost.isRecruiting()         엔티티 · 제공됨
-     *             StudyPost.isDeadlinePassed()     엔티티 · 제공됨
-     *             ApplicationRepository 의 조회 규약  제공됨
-     *             MemberService.getMember()        제공됨
-     *             ApplicationResponse.from()       제공됨
-     * 반환형태    ApplicationResponse · TODO.md 응답 형태 참고
-     * 동작결과    EP-07 · 201 · 자기 글 400 SELF_APPLICATION
-     *             마감 400 STUDY_CLOSED · 마감일 경과 400 DEADLINE_PASSED
-     *             중복 400 DUPLICATE_APPLICATION
-     */
-        throw new UnsupportedOperationException("TODO 31");
+        // 1. 대상 확인 (모집글 존재 여부 확인 / 없으면 404 NOT_FOUND)
+        StudyPost studyPost = studyService.getWithWriter(studyPostId);
+
+        // 2. 자기 모집글 확인 (400 SELF_APPLICATION)
+        if (studyPost.isWrittenBy(memberId)) {
+            throw new BusinessException(ErrorCode.SELF_APPLICATION);
+        }
+
+        // 3. 상태 확인 (400 STUDY_CLOSED)
+        if (!studyPost.isRecruiting()) {
+            throw new BusinessException(ErrorCode.STUDY_CLOSED);
+        }
+
+        // 4. 마감일 확인 (400 DEADLINE_PASSED)
+        if (studyPost.isDeadlinePassed()) {
+            throw new BusinessException(ErrorCode.DEADLINE_PASSED);
+        }
+
+        // 5. 중복 신청 확인 (400 DUPLICATE_APPLICATION)
+        if (applicationRepository.findByStudyPostIdAndApplicantId(studyPostId, memberId).isPresent()) {
+            throw new BusinessException(ErrorCode.DUPLICATE_APPLICATION);
+        }
+
+        // 6. 신청자 조회 및 엔티티 생성/저장
+        Member applicant = memberService.getMember(memberId);
+        Application application = new Application(studyPost, applicant, message);
+        Application savedApplication = applicationRepository.save(application);
+
+        // 7. DTO 변환 및 반환
+        return ApplicationResponse.from(savedApplication);
     }
 
     /**

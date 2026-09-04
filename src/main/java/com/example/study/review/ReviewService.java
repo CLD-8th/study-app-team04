@@ -43,7 +43,10 @@ public class ReviewService {
      * 반환형태    List<ReviewResponse>
      * 동작결과    EP-12 · 토큰 없이도 200
      */
-        throw new UnsupportedOperationException("TODO 52");
+        return reviewRepository.findByStudyPostIdOrderByCreatedAtAsc(studyPostId)
+                .stream()
+                .map(ReviewResponse::from)
+                .toList();
     }
 
     /**
@@ -66,7 +69,25 @@ public class ReviewService {
      * 동작결과    EP-13 · 201 · 모집 중이면 400 STUDY_NOT_CLOSED
      *             참여자가 아니면 403 · 두 번째는 400 DUPLICATE_REVIEW
      */
-        throw new UnsupportedOperationException("TODO 53");
+        StudyPost post = studyService.getWithWriter(studyPostId);
+
+        if (post.isRecruiting()) {
+            throw new BusinessException(ErrorCode.STUDY_NOT_CLOSED);
+        }
+
+        if (!isParticipant(post, memberId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        if (reviewRepository.existsByStudyPostIdAndWriterId(studyPostId, memberId)) {
+            throw new BusinessException(ErrorCode.DUPLICATE_REVIEW);
+        }
+
+        Member writer = memberService.getMember(memberId);
+        Review review = new Review(content, rating, post, writer);
+        Review saved = reviewRepository.save(review);
+
+        return ReviewResponse.from(saved);
     }
 
     /**
@@ -88,7 +109,14 @@ public class ReviewService {
      * 반환형태    없음
      * 동작결과    EP-14 · 204 · 남의 후기는 403 FORBIDDEN
      */
-        throw new UnsupportedOperationException("TODO 54");
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        if (!review.isWrittenBy(memberId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        reviewRepository.delete(review);
     }
 
     private boolean isParticipant(StudyPost post, Long memberId) {
@@ -102,6 +130,14 @@ public class ReviewService {
      * 반환형태    boolean
      * 동작결과    모집자와 수락된 신청자만 후기 입력란이 보임
      */
-        throw new UnsupportedOperationException("TODO 55");
+        if (post.isWrittenBy(memberId)) {
+            return true;
+        }
+
+        return applicationRepository.existsByStudyPostIdAndApplicantIdAndStatusIn(
+                post.getId(),
+                memberId,
+                List.of(ApplicationStatus.ACCEPTED)
+        );
     }
 }

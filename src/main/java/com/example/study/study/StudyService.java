@@ -52,8 +52,6 @@ public class StudyService {
      * 동작결과    EP-03 · 201 과 Location 머리 · 상태는 RECRUITING
      */
 
-//        log.info("===== TODO 21 create 호출됨 =====");
-//        log.info("title={}, memberId={}", title, memberId);
         Member writer = memberService.getMember(memberId);
 
         StudyPost studyPost = new StudyPost(title,content,capacity,deadline,writer);
@@ -203,7 +201,29 @@ public class StudyService {
      * 반환형태    StudyDetailResponse
      * 동작결과    EP-06 · 상태가 CLOSED · 이미 마감이면 400 STUDY_CLOSED
      */
-        throw new UnsupportedOperationException("TODO 25");
+
+        StudyPost post = getWithWriter(id);
+
+        if (!post.isWrittenBy(memberId)) {
+            throw new BusinessException(
+                    ErrorCode.FORBIDDEN,
+                    "작성자만 모집을 마감할 수 있습니다."
+            );
+        }
+
+        if (!post.isRecruiting()) {
+            throw new BusinessException(
+                    ErrorCode.STUDY_CLOSED,
+                    "이미 마감된 모집글입니다."
+            );
+        }
+
+        post.close();
+
+        long acceptedCount = countAccepted(id);
+
+        return StudyDetailResponse.of(post, acceptedCount);
+//        throw new UnsupportedOperationException("TODO 25");
     }
 
     public List<StudyListResponse> findMine(Long memberId) {

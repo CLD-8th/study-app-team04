@@ -38,7 +38,6 @@ public class ApplicationController {
             @Valid @RequestBody ApplicationRequest request,
             @AuthenticationPrincipal Long memberId) {
 
-        // request.getMessage() -> request.message() 로 수정
         ApplicationResponse response = applicationService.apply(studyId, request.message(), memberId);
         return ResponseEntity.status(201).body(response);
     }

@@ -17,7 +17,7 @@ StudyPage.register(async function renderApply() {
     const study = StudyPage.study;
     const myApplication = StudyPage.myApplication;
 
-    if (!auth.loggedIn() || StudyPage.isOwner() || study.status === 'CLOSED' || study.status === 'COMPLETED') {
+    if (!study || !auth.loggedIn() || StudyPage.isOwner() || study.status === 'CLOSED' || study.status === 'COMPLETED') {
         applyPanel.innerHTML = '';
         return;
     }
@@ -65,7 +65,7 @@ StudyPage.register(async function renderApply() {
                 <span class="apply-date">신청일: ${shortDate(myApplication.createdAt)}</span>
             </div>
             <div class="apply-body">
-                <p class="apply-message">${myApplication.message || '작성한 메시지가 없습니다.'}</p>
+                <p class="apply-message">${escapeHtml(myApplication.message) || '작성한 메시지가 없습니다.'}</p>
             </div>
             <div class="apply-actions">
                 ${cancelBtnHtml}
@@ -80,7 +80,6 @@ StudyPage.register(async function renderApply() {
 
             try {
                 await api.del(`/api/applications/${myApplication.id}`);
-
                 await StudyPage.reload();
             } catch (error) {
                 showError(error);

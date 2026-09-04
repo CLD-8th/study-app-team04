@@ -9,14 +9,18 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
+    @EntityGraph(attributePaths = "applicant")
+    List<Application> findByStudyPostIdOrderByCreatedAtAsc(Long studyPostId);
 
     /**
+     *
      * 신청 목록.
      *
      * 신청자를 함께 가져와 목록 건수만큼 조회가 늘어나지 않게 함.
      */
     /*
      * TODO 41 · 신청 목록 규약
+     *
      *
      * 기능        모집글 식별자로 조회하며 오래된 순 · 신청자를 함께 가져옴
      * 활용메소드  없음 · 이름 규약으로 직접 선언

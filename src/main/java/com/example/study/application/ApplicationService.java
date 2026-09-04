@@ -76,11 +76,7 @@ public class ApplicationService {
      */
 
     /*
-<<<<<<< Updated upstream
      * TODO 32 · 신청 취소
-=======
-     * TODO 32 · 취소
->>>>>>> Stashed changes
      */
     @Transactional
     public void cancel(Long applicationId, Long memberId) {

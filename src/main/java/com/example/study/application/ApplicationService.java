@@ -36,28 +36,36 @@ public class ApplicationService {
      * 순서는 대상 확인 · 자기 모집글 · 상태 · 마감일 · 중복임.
      * 상태가 마감인 경우와 마감일이 지난 경우는 사유가 다르므로 나누어 판단함.
      */
-    @Transactional
-    public ApplicationResponse apply(Long studyPostId, String message, Long memberId) {
+
     /*
      * TODO 31 · 신청
-     *
-     * 기능        대상 확인 → 자기 모집글 → 상태 → 마감일 → 중복 순서로 판단
-     *             순서가 바뀌면 없는 모집글에 다른 판단을 시도하게 됨
-     *             상태가 마감인 것과 마감일이 지난 것은 사유가 다름
-     *             거절된 신청도 중복으로 봄 · 재신청을 허용하지 않기로 정함
-     * 활용메소드  StudyService.getWithWriter()      제공됨
-     *             StudyPost.isWrittenBy()          엔티티 · 제공됨
-     *             StudyPost.isRecruiting()         엔티티 · 제공됨
-     *             StudyPost.isDeadlinePassed()     엔티티 · 제공됨
-     *             ApplicationRepository 의 조회 규약  제공됨
-     *             MemberService.getMember()        제공됨
-     *             ApplicationResponse.from()       제공됨
-     * 반환형태    ApplicationResponse · TODO.md 응답 형태 참고
-     * 동작결과    EP-07 · 201 · 자기 글 400 SELF_APPLICATION
-     *             마감 400 STUDY_CLOSED · 마감일 경과 400 DEADLINE_PASSED
-     *             중복 400 DUPLICATE_APPLICATION
      */
-        throw new UnsupportedOperationException("TODO 31");
+    @Transactional
+    public ApplicationResponse apply(Long studyPostId, String message, Long memberId) {
+        StudyPost studyPost = studyService.getWithWriter(studyPostId);
+
+        if (studyPost.isWrittenBy(memberId)) {
+            throw new BusinessException(ErrorCode.SELF_APPLICATION);
+        }
+
+        if (!studyPost.isRecruiting()){
+            throw new BusinessException(ErrorCode.STUDY_CLOSED);
+        }
+
+        if (studyPost.isDeadlinePassed()) {
+            throw new BusinessException(ErrorCode.DEADLINE_PASSED);
+        }
+
+        if (applicationRepository.findByStudyPostIdAndApplicantId(studyPostId, memberId).isPresent()) {
+            throw new BusinessException(ErrorCode.DUPLICATE_APPLICATION);
+        }
+
+        Member applicant = memberService.getMember(memberId);
+        Application application = new Application(studyPost, applicant, message);
+
+        Application savedApplication = applicationRepository.save(application);
+
+        return ApplicationResponse.from(savedApplication);
     }
 
     /**
@@ -66,21 +74,23 @@ public class ApplicationService {
      * 대기 상태만 취소 가능함. 수락된 신청을 취소하면
      * 마감된 모집글에 빈자리가 생기며 되돌릴 방법이 없음.
      */
-    @Transactional
-    public void cancel(Long applicationId, Long memberId) {
+
     /*
      * TODO 32 · 신청 취소
-     *
-     * 기능        신청자 본인인지 → 대기 상태인지 확인한 뒤 행을 지움
-     *             수락된 신청을 취소하면 마감된 글에 빈자리가 생기며 되돌릴 수 없음
-     * 활용메소드  ApplicationService.getWithStudyPost()   같은 클래스 · 제공됨
-     *             Application.isAppliedBy()              엔티티 · 제공됨
-     *             Application.isPending()                엔티티 · 제공됨
-     *             ApplicationRepository.delete()         제공됨
-     * 반환형태    없음
-     * 동작결과    EP-08 · 204 · 남의 신청 403 · 처리된 건 400 ALREADY_PROCESSED
      */
-        throw new UnsupportedOperationException("TODO 32");
+    @Transactional
+    public void cancel(Long applicationId, Long memberId) {
+        Application application = getWithStudyPost(applicationId);
+
+        if (!application.isAppliedBy(memberId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        if (!application.isPending()) {
+            throw new BusinessException(ErrorCode.ALREADY_PROCESSED);
+        }
+
+        applicationRepository.delete(application);
     }
 
     public List<ApplicationResponse> findByStudy(Long studyPostId, Long memberId) {

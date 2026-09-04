@@ -36,7 +36,6 @@ StudyPage.register(async function renderDetail() {
     }
 
     detail.innerHTML =
-        '<div class="card">' +
         '<div class="card-head">' +
         '<div class="card-title" style="font-size:19px;">' +
         escapeHtml(study.title) +
@@ -52,8 +51,9 @@ StudyPage.register(async function renderDetail() {
         '<div style="font-size:13px; line-height:1.7; white-space:pre-wrap;">' +
         escapeHtml(study.content) +
         '</div>' +
-        actions +
-        '</div>';
+        actions;
+
+    detail.classList.remove('hidden');
 
     /*
      * TODO 28 · 단추 동작

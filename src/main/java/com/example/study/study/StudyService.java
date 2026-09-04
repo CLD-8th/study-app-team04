@@ -170,7 +170,18 @@ public class StudyService {
      * 반환형태    없음
      * 동작결과    EP-05 · 204 · 남의 글은 403 FORBIDDEN
      */
-        throw new UnsupportedOperationException("TODO 24");
+
+        StudyPost post = getWithWriter(id);
+
+        if (!post.isWrittenBy(memberId)) {
+            throw new BusinessException(
+                    ErrorCode.FORBIDDEN,
+                    "작성자만 삭제할 수 있습니다."
+            );
+        }
+
+        studyPostRepository.delete(post);
+//        throw new UnsupportedOperationException("TODO 24");
     }
 
     /**

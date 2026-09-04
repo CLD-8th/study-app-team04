@@ -30,26 +30,67 @@ public class ApplicationController {
 
     /*
      * TODO 33 · 신청과 취소 주소
-     *
-     * 기능        POST /api/studies/{studyId}/applications 와
-     *             DELETE /api/applications/{id} 를 만듦
-     *             신청은 201 · 취소는 204
-     * 활용메소드  ApplicationService.apply()    TODO 31 · 같은 담당
-     *             ApplicationService.cancel()   TODO 32 · 같은 담당
-     * 반환형태    ApplicationResponse · 취소는 없음
-     * 동작결과    EP-07 · EP-08
      */
+
+    @PostMapping("/api/studies/{studyId}/applications")
+    public ResponseEntity<ApplicationResponse> apply(
+            @PathVariable Long studyId,
+            @Valid @RequestBody ApplicationRequest request,
+            @AuthenticationPrincipal Long memberId) {
+
+        ApplicationResponse response = applicationService.apply(studyId, request.message(), memberId);
+        return ResponseEntity.status(201).body(response);
+    }
+
+    @DeleteMapping("/api/applications/{id}")
+    public ResponseEntity<Void> cancel(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long memberId) {
+
+        applicationService.cancel(id, memberId);
+        return ResponseEntity.noContent().build();
+    }
+
 
     /*
      * TODO 46 · 신청 처리 주소 셋
      *
-     * 기능        GET /api/studies/{studyId}/applications
-     *             PATCH /api/applications/{id}/accept
-     *             PATCH /api/applications/{id}/reject 를 만듦
+     * 기능        GET /api/studies/{studyId}/applications # 목록조회
+     *             PATCH /api/applications/{id}/accept # 수락
+     *             PATCH /api/applications/{id}/reject 를 만듦 # 거절
      * 활용메소드  ApplicationService.findByStudy()   TODO 42 · 같은 담당
      *             ApplicationService.accept()       TODO 43 · 같은 담당
      *             ApplicationService.reject()       TODO 44 · 같은 담당
      * 반환형태    List<ApplicationResponse> · ApplicationResponse
      * 동작결과    EP-09 · EP-10 · EP-11
      */
+
+    @GetMapping("api/studies/{studyId}/applications")
+    public List<ApplicationResponse> findByStudyId(
+            @PathVariable Long studyId, // GetMapping 뒤에 들어갈
+            @AuthenticationPrincipal Long memberId // 현재 로그인한 사용자 정보
+    ) {
+
+        return applicationService.findByStudy(studyId, memberId);
+
+    }
+
+    @PatchMapping("/api/applications/{id}/accept")
+    public ApplicationResponse accept(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long memberId
+    ){
+        return applicationService.accept(id, memberId);
+
+    }
+
+    @PatchMapping("api/applications/{id}/reject")
+    public ApplicationResponse reject(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long memberId
+    ){
+        return applicationService.reject(id,memberId);
+    }
+
+
 }

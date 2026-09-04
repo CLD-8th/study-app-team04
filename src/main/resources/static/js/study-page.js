@@ -41,6 +41,7 @@ const StudyPage = {
             return;
         }
 
+
         this.myApplication = null;
         if (auth.loggedIn && !this.isOwner()) {
             const mine = await api.get('/api/members/me/applications');

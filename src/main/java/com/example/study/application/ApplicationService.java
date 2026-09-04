@@ -36,38 +36,35 @@ public class ApplicationService {
      * 순서는 대상 확인 · 자기 모집글 · 상태 · 마감일 · 중복임.
      * 상태가 마감인 경우와 마감일이 지난 경우는 사유가 다르므로 나누어 판단함.
      */
+
+    /*
+     * TODO 31 · 신청
+     */
     @Transactional
     public ApplicationResponse apply(Long studyPostId, String message, Long memberId) {
-        // 1. 대상 확인 (모집글 존재 여부 확인 / 없으면 404 NOT_FOUND 발생)
         StudyPost studyPost = studyService.getWithWriter(studyPostId);
 
-        // 2. 자기 모집글 확인 (400 SELF_APPLICATION)
         if (studyPost.isWrittenBy(memberId)) {
             throw new BusinessException(ErrorCode.SELF_APPLICATION);
         }
 
-        // 3. 모집 상태 확인 (400 STUDY_CLOSED)
         if (!studyPost.isRecruiting()){
             throw new BusinessException(ErrorCode.STUDY_CLOSED);
         }
 
-        // 4. 마감일 확인 (400 DEADLINE_PASSED)
         if (studyPost.isDeadlinePassed()) {
             throw new BusinessException(ErrorCode.DEADLINE_PASSED);
         }
 
-        // 5. 중복 신청 확인 (거절 건 포함 이미 존재하면 400 DUPLICATE_APPLICATION)
         if (applicationRepository.findByStudyPostIdAndApplicantId(studyPostId, memberId).isPresent()) {
             throw new BusinessException(ErrorCode.DUPLICATE_APPLICATION);
         }
 
-        // 6. 신청자 조회 및 Application 엔티티 생성/저장
         Member applicant = memberService.getMember(memberId);
         Application application = new Application(studyPost, applicant, message);
 
         Application savedApplication = applicationRepository.save(application);
 
-        // 7. 응답 DTO 변환 및 반환
         return ApplicationResponse.from(savedApplication);
     }
 
@@ -77,22 +74,22 @@ public class ApplicationService {
      * 대기 상태만 취소 가능함. 수락된 신청을 취소하면
      * 마감된 모집글에 빈자리가 생기며 되돌릴 방법이 없음.
      */
+
+    /*
+     * TODO 32 · 신청 취소
+     */
     @Transactional
     public void cancel(Long applicationId, Long memberId) {
-        // 1. 신청 건 및 모집글 함께 조회 (없으면 404 NOT_FOUND)
         Application application = getWithStudyPost(applicationId);
 
-        // 2. 신청자 본인 확인 (본인이 아니면 403 FORBIDDEN)
         if (!application.isAppliedBy(memberId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // 3. 대기(PENDING) 상태 확인 (대기 상태가 아니면 400 ALREADY_PROCESSED)
         if (!application.isPending()) {
             throw new BusinessException(ErrorCode.ALREADY_PROCESSED);
         }
 
-        // 4. 신청 취소 (행 삭제)
         applicationRepository.delete(application);
     }
 

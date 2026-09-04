@@ -94,18 +94,26 @@ public class ApplicationService {
     }
 
     public List<ApplicationResponse> findByStudy(Long studyPostId, Long memberId) {
-    /*
-     * TODO 42 · 신청 목록 조회
-     *
-     * 기능        모집자 본인인지 확인한 뒤 오래된 순으로 조회함
-     * 활용메소드  StudyService.getWithWriter()        제공됨
-     *             StudyPost.isWrittenBy()             엔티티 · 제공됨
-     *             ApplicationRepository 의 목록 규약     TODO 41 · 같은 담당
-     *             ApplicationResponse.from()          제공됨
-     * 반환형태    List<ApplicationResponse>
-     * 동작결과    EP-09 · 모집자는 200 · 남이면 403 FORBIDDEN
-     */
-        throw new UnsupportedOperationException("TODO 42");
+        /*
+         * TODO 42 · 신청 목록 조회
+         *
+         * 기능        모집자 본인인지 확인한 뒤 오래된 순으로 조회함
+         * 활용메소드  StudyService.getWithWriter()        제공됨
+         *             StudyPost.isWrittenBy()             엔티티 · 제공됨
+         *             ApplicationRepository 의 목록 규약     TODO 41 · 같은 담당
+         *             ApplicationResponse.from()          제공됨
+         * 반환형태    List<ApplicationResponse>
+         * 동작결과    EP-09 · 모집자는 200 · 남이면 403 FORBIDDEN
+         */
+        StudyPost studyPost = studyService.getWithWriter(studyPostId);
+
+        if (!studyPost.isWrittenBy(memberId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "모집자만 신청 목록을 조회할 수 있습니다.");
+        }
+        List<Application> applications = applicationRepository.findByStudyPostIdOrderByCreatedAtAsc(studyPostId);
+        return applications.stream()
+                .map(ApplicationResponse::from)
+                .toList();
     }
 
     public List<ApplicationResponse> findMine(Long memberId) {

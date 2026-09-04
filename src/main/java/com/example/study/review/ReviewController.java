@@ -4,6 +4,7 @@ import com.example.study.review.dto.ReviewRequest;
 import com.example.study.review.dto.ReviewResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,4 +33,33 @@ public class ReviewController {
      * 반환형태    List<ReviewResponse> · ReviewResponse
      * 동작결과    EP-12 · EP-13 · EP-14 · 목록은 토큰 없이 200
      */
+    @GetMapping("/api/studies/{studyId}/reviews")
+    public ResponseEntity<List<ReviewResponse>> getReviews(@PathVariable Long studyId) {
+        List<ReviewResponse> responses = reviewService.findByStudy(studyId);
+        return ResponseEntity.ok(responses);
+    }
+
+    @PostMapping("/api/studies/{studyId}/reviews")
+    public ResponseEntity<ReviewResponse> createReview(
+            @PathVariable Long studyId,
+            @Valid @RequestBody ReviewRequest request,
+            @AuthenticationPrincipal Long memberId
+    ) {
+        ReviewResponse response = reviewService.create(
+                studyId,
+                request.content(),
+                request.rating(),
+                memberId
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @DeleteMapping("/api/reviews/{reviewId}")
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal Long memberId
+    ) {
+        reviewService.delete(reviewId, memberId);
+        return ResponseEntity.noContent().build();
+    }
 }
